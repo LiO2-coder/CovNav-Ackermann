@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='ASCII'?>
+<sdf version="1.4">
+  <model name="ackermann_autogen_terrain">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <heightmap>
+            <uri>model://autogen_terrain/materials/textures/ackermann_heightmap.png</uri>
+            <size>129 129 6</size>
+            <pos>0 0 0</pos>
+          </heightmap>
+        </geometry>
+      </collision>
+      <visual name="sand_heightmap_visual">
+        <geometry>
+          <heightmap>
+            <texture>
+              <diffuse>model://autogen_terrain/materials/textures/sand_diffusespecular.png</diffuse>
+              <normal>model://autogen_terrain/materials/textures/flat_normal.png</normal>
+              <size>5</size>
+            </texture>
+            <uri>model://autogen_terrain/materials/textures/ackermann_heightmap.png</uri>
+            <size>129 129 6</size>
+            <pos>0 0 0</pos>
+          </heightmap>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

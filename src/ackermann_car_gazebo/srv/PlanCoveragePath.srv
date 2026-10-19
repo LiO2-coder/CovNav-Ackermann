@@ -1,0 +1,26 @@
+std_msgs/Header header
+geometry_msgs/Point[] polygon
+bool use_robot_start
+geometry_msgs/Pose2D robot_start
+bool use_robot_start_heading
+float64 scan_width
+float64 coverage_ratio
+float64 turn_radius
+float64 turn_step
+float64 start_connection_weight
+---
+bool success
+string message
+nav_msgs/Path path
+uint32 num_lines
+uint32 decomposition_count
+float64 line_spacing
+float64 total_width
+float64 total_path_cost
+float64 internal_path_cost
+float64 smooth_connection_cost
+float64 start_connection_cost
+int32 start_region_index
+int32 start_variant_index
+int32[] selected_variant_indices
+uint32[] connection_order

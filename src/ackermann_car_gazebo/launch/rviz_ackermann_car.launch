@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="rviz_config" default="$(find ackermann_car_gazebo)/rviz/ackermann_car.rviz"/>
+
+  <param name="/use_sim_time" value="$(arg use_sim_time)"/>
+
+  <node pkg="rviz" type="rviz" name="ackermann_car_rviz" output="screen"
+        args="-d $(arg rviz_config)"/>
+</launch>

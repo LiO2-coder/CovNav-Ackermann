@@ -1,0 +1,429 @@
+<?xml version="1.0"?>
+<robot name="ackermann_car"
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="robot_namespace" default="ackermann_car"/>
+  <xacro:arg name="sonar_max_range" default="3.0"/>
+  <xacro:arg name="sonar_fov" default="0.5235987756"/>
+
+  <xacro:property name="ns" value="$(arg robot_namespace)"/>
+  <xacro:property name="body_length" value="0.90"/>
+  <xacro:property name="body_width" value="0.70"/>
+  <xacro:property name="body_height" value="0.30"/>
+  <xacro:property name="wheel_radius" value="0.10"/>
+  <xacro:property name="wheel_width" value="0.055"/>
+  <xacro:property name="wheelbase" value="0.60"/>
+  <xacro:property name="track" value="0.56"/>
+  <xacro:property name="front_x" value="0.30"/>
+  <xacro:property name="rear_x" value="-0.30"/>
+  <xacro:property name="wheel_z" value="-0.14"/>
+  <xacro:property name="camera_width" value="640"/>
+  <xacro:property name="camera_height" value="480"/>
+  <xacro:property name="camera_fx" value="615.000365"/>
+  <xacro:property name="camera_cx" value="320.0"/>
+  <xacro:property name="camera_cy" value="240.0"/>
+  <xacro:property name="sonar_min_range" value="0.01"/>
+  <xacro:property name="sonar_max_range_m" value="$(arg sonar_max_range)"/>
+  <xacro:property name="sonar_fov_rad" value="$(arg sonar_fov)"/>
+
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="${mass * (y * y + z * z) / 12.0}" ixy="0" ixz="0" iyy="${mass * (x * x + z * z) / 12.0}" iyz="0" izz="${mass * (x * x + y * y) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertia_x" params="mass radius length">
+    <inertial>
+      <mass value="${mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}" ixy="0" ixz="0" iyy="${0.5 * mass * radius * radius}" iyz="0" izz="${mass * (3.0 * radius * radius + length * length) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="wheel_link" params="name visual:=true collision:=true">
+    <link name="${name}">
+      <xacro:cylinder_inertia_x mass="0.8" radius="${wheel_radius}" length="${wheel_width}"/>
+      <xacro:if value="${collision}">
+        <collision>
+          <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+          <geometry>
+            <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>2.0</mu>
+                <mu2>2.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1000000.0</kp>
+                <kd>1.0</kd>
+                <max_vel>0.1</max_vel>
+                <min_depth>0.001</min_depth>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+      </xacro:if>
+      <xacro:if value="${visual}">
+        <visual>
+          <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+          <geometry>
+            <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+          </geometry>
+          <material name="wheel_black">
+            <color rgba="0.02 0.02 0.02 1"/>
+          </material>
+        </visual>
+      </xacro:if>
+    </link>
+  </xacro:macro>
+
+  <link name="base_link">
+    <xacro:box_inertia mass="18.0" x="${body_length}" y="${body_width}" z="${body_height}"/>
+    <collision>
+      <origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} 0.22"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${body_length} ${body_width} ${body_height}"/>
+      </geometry>
+      <material name="body_blue">
+        <color rgba="0.08 0.32 0.78 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="front_steering_link">
+    <xacro:box_inertia mass="0.6" x="0.10" y="0.08" z="0.05"/>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.10 0.08 0.05"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.10 0.08 0.05"/>
+      </geometry>
+      <material name="steering_grey">
+        <color rgba="0.25 0.25 0.25 0.35"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="front_steering_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="front_steering_link"/>
+    <origin xyz="${front_x} 0 ${wheel_z}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.70" upper="0.70" effort="60" velocity="1.5"/>
+    <dynamics damping="0.2" friction="0.05"/>
+  </joint>
+
+  <xacro:wheel_link name="front_wheel_link" visual="false"/>
+  <joint name="front_wheel_joint" type="continuous">
+    <parent link="front_steering_link"/>
+    <child link="front_wheel_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.02" friction="0.02"/>
+  </joint>
+
+  <xacro:wheel_link name="left_front_wheel_link" collision="false"/>
+  <joint name="left_front_wheel_joint" type="fixed">
+    <parent link="front_steering_link"/>
+    <child link="left_front_wheel_link"/>
+    <origin xyz="0 ${track / 2.0} 0" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:wheel_link name="right_front_wheel_link" collision="false"/>
+  <joint name="right_front_wheel_joint" type="fixed">
+    <parent link="front_steering_link"/>
+    <child link="right_front_wheel_link"/>
+    <origin xyz="0 ${-track / 2.0} 0" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:wheel_link name="left_wheel_link"/>
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="${rear_x} ${track / 2.0} ${wheel_z}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.02" friction="0.02"/>
+  </joint>
+
+  <xacro:wheel_link name="right_wheel_link"/>
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="${rear_x} ${-track / 2.0} ${wheel_z}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.02" friction="0.02"/>
+  </joint>
+
+  <link name="imu_link">
+    <xacro:box_inertia mass="0.05" x="0.04" y="0.04" z="0.02"/>
+    <visual>
+      <geometry>
+        <box size="0.04 0.04 0.02"/>
+      </geometry>
+      <material name="sensor_green">
+        <color rgba="0.0 0.7 0.2 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0.16" rpy="0 0 0"/>
+  </joint>
+
+  <link name="front_camera_link">
+    <xacro:box_inertia mass="0.12" x="0.05" y="0.08" z="0.05"/>
+    <collision>
+      <geometry>
+        <box size="0.05 0.08 0.05"/>
+      </geometry>
+    </collision>
+    <visual>
+      <geometry>
+        <box size="0.05 0.08 0.05"/>
+      </geometry>
+      <material name="camera_black">
+        <color rgba="0.01 0.01 0.01 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="front_camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_camera_link"/>
+    <origin xyz="0.475 0 0.08" rpy="0 0 0"/>
+  </joint>
+
+  <link name="front_camera_optical_link">
+    <xacro:box_inertia mass="0.01" x="0.01" y="0.01" z="0.01"/>
+  </link>
+  <joint name="front_camera_optical_joint" type="fixed">
+    <parent link="front_camera_link"/>
+    <child link="front_camera_optical_link"/>
+    <origin xyz="0.03 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
+  </joint>
+
+  <link name="front_sonar_link">
+    <xacro:box_inertia mass="0.08" x="0.04" y="0.08" z="0.03"/>
+    <collision>
+      <origin xyz="-0.025 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.08 0.03"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="-0.025 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.08 0.03"/>
+      </geometry>
+      <material name="sonar_grey">
+        <color rgba="0.12 0.12 0.14 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="front_sonar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_sonar_link"/>
+    <origin xyz="0.505 0 0.155" rpy="0 0 0"/>
+  </joint>
+
+  <link name="rtk_front_link">
+    <xacro:box_inertia mass="0.05" x="0.06" y="0.06" z="0.03"/>
+    <visual>
+      <geometry>
+        <cylinder radius="0.03" length="0.03"/>
+      </geometry>
+      <material name="rtk_white">
+        <color rgba="0.95 0.95 0.9 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="rtk_front_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rtk_front_link"/>
+    <origin xyz="0.30 0 0.30" rpy="0 0 0"/>
+  </joint>
+
+  <link name="rtk_rear_link">
+    <xacro:box_inertia mass="0.05" x="0.06" y="0.06" z="0.03"/>
+    <visual>
+      <geometry>
+        <cylinder radius="0.03" length="0.03"/>
+      </geometry>
+      <material name="rtk_white"/>
+    </visual>
+  </link>
+  <joint name="rtk_rear_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rtk_rear_link"/>
+    <origin xyz="-0.30 0 0.30" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="base_link">
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <gazebo reference="left_wheel_link">
+    <mu1>1.2</mu1>
+    <mu2>1.2</mu2>
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="right_wheel_link">
+    <mu1>1.2</mu1>
+    <mu2>1.2</mu2>
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="front_wheel_link">
+    <mu1>1.2</mu1>
+    <mu2>1.2</mu2>
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="left_front_wheel_link">
+    <mu1>0.05</mu1>
+    <mu2>0.05</mu2>
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="right_front_wheel_link">
+    <mu1>0.05</mu1>
+    <mu2>0.05</mu2>
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="imu_link">
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <plugin name="imu_controller" filename="libgazebo_ros_imu_sensor.so">
+        <robotNamespace>/${ns}</robotNamespace>
+        <topicName>imu/data</topicName>
+        <frameName>imu_link</frameName>
+        <updateRateHZ>100.0</updateRateHZ>
+        <gaussianNoise>0.0002</gaussianNoise>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="front_camera_link">
+    <sensor name="front_rgb_camera" type="camera">
+      <always_on>true</always_on>
+      <update_rate>30</update_rate>
+      <visualize>true</visualize>
+      <camera>
+        <horizontal_fov>${2.0 * atan(camera_width / (2.0 * camera_fx))}</horizontal_fov>
+        <image>
+          <width>${camera_width}</width>
+          <height>${camera_height}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.05</near>
+          <far>100.0</far>
+        </clip>
+      </camera>
+      <plugin name="front_camera_controller" filename="libgazebo_ros_camera.so">
+        <robotNamespace>/${ns}</robotNamespace>
+        <alwaysOn>true</alwaysOn>
+        <updateRate>30.0</updateRate>
+        <cameraName>front_camera</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>front_camera_optical_link</frameName>
+        <focalLength>${camera_fx}</focalLength>
+        <Cx>${camera_cx}</Cx>
+        <Cy>${camera_cy}</Cy>
+        <CxPrime>${camera_cx}</CxPrime>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="front_sonar_link">
+    <sensor name="front_sonar" type="ray">
+      <always_on>true</always_on>
+      <update_rate>20</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>5</samples>
+            <resolution>1</resolution>
+            <min_angle>${-sonar_fov_rad / 2.0}</min_angle>
+            <max_angle>${sonar_fov_rad / 2.0}</max_angle>
+          </horizontal>
+          <vertical>
+            <samples>1</samples>
+            <resolution>1</resolution>
+            <min_angle>0.0</min_angle>
+            <max_angle>0.0</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>${sonar_min_range}</min>
+          <max>${sonar_max_range_m}</max>
+          <resolution>0.01</resolution>
+        </range>
+      </ray>
+      <plugin name="front_sonar_controller" filename="libhector_gazebo_ros_sonar.so">
+        <robotNamespace>/${ns}</robotNamespace>
+        <topicName>sonar/range</topicName>
+        <frameId>front_sonar_link</frameId>
+        <updateRate>20.0</updateRate>
+        <gaussianNoise>0.0</gaussianNoise>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="tricycle_drive_controller" filename="libgazebo_ros_tricycle_drive.so">
+      <robotNamespace>/${ns}</robotNamespace>
+      <publishWheelTF>false</publishWheelTF>
+      <publishWheelJointState>true</publishWheelJointState>
+      <alwaysOn>true</alwaysOn>
+      <steeringJoint>front_steering_joint</steeringJoint>
+      <actuatedWheelJoint>front_wheel_joint</actuatedWheelJoint>
+      <encoderWheelLeftJoint>left_wheel_joint</encoderWheelLeftJoint>
+      <encoderWheelRightJoint>right_wheel_joint</encoderWheelRightJoint>
+      <actuatedWheelDiameter>${2.0 * wheel_radius}</actuatedWheelDiameter>
+      <encoderWheelDiameter>${2.0 * wheel_radius}</encoderWheelDiameter>
+      <encoderWheelSeparation>${track}</encoderWheelSeparation>
+      <commandTopic>/${ns}/tricycle_cmd</commandTopic>
+      <odometryTopic>/${ns}/odom</odometryTopic>
+      <odometryFrame>/odom</odometryFrame>
+      <odometrySource>world</odometrySource>
+      <robotBaseFrame>/base_link</robotBaseFrame>
+      <updateRate>100.0</updateRate>
+      <wheelAcceleration>12.0</wheelAcceleration>
+      <wheelDeceleration>16.0</wheelDeceleration>
+      <wheelSpeedTolerance>0.02</wheelSpeedTolerance>
+      <wheelTorque>120</wheelTorque>
+      <steeringSpeed>0.0</steeringSpeed>
+      <steeringAngleTolerance>0.01</steeringAngleTolerance>
+    </plugin>
+  </gazebo>
+</robot>

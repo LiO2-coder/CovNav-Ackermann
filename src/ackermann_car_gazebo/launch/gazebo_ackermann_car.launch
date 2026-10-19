@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot_name" default="ackermann_car"/>
+  <arg name="robot_namespace" default="ackermann_car"/>
+  <arg name="world_name" default="$(find ackermann_car_gazebo)/worlds/terrain.world"/>
+
+  <arg name="x" default="0.0"/>
+  <arg name="y" default="0.0"/>
+  <arg name="z" default="10.0"/>
+  <arg name="yaw" default="0.0"/>
+
+  <arg name="gui" default="true"/>
+  <arg name="rviz" default="true"/>
+  <arg name="rviz_config" default="$(find ackermann_car_gazebo)/rviz/ackermann_car.rviz"/>
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="start_ekf" default="true"/>
+  <arg name="sonar_max_range_cm" default="300.0"/>
+  <arg name="sonar_fov_deg" default="10.00"/>
+  <arg name="sonar_max_range" default="$(eval float(arg('sonar_max_range_cm')) / 100.0)"/>
+  <arg name="sonar_fov" default="$(eval float(arg('sonar_fov_deg')) * 3.141592653589793 / 180.0)"/>
+
+  <param name="/use_sim_time" value="$(arg use_sim_time)"/>
+  <env name="GAZEBO_MODEL_PATH" value="$(find ackermann_car_gazebo)/worlds:$(optenv GAZEBO_MODEL_PATH)"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_name)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+  </include>
+
+  <param name="robot_description"
+         command="$(find xacro)/xacro '$(find ackermann_car_gazebo)/urdf/ackermann_car.urdf.xacro' robot_namespace:=$(arg robot_namespace) sonar_max_range:=$(arg sonar_max_range) sonar_fov:=$(arg sonar_fov)"/>
+
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_$(arg robot_name)" output="screen"
+        args="-urdf -param robot_description -model $(arg robot_name) -x $(arg x) -y $(arg y) -z $(arg z) -Y $(arg yaw)"/>
+
+  <group ns="$(arg robot_namespace)">
+    <param name="robot_description"
+           command="$(find xacro)/xacro '$(find ackermann_car_gazebo)/urdf/ackermann_car.urdf.xacro' robot_namespace:=$(arg robot_namespace) sonar_max_range:=$(arg sonar_max_range) sonar_fov:=$(arg sonar_fov)"/>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen"/>
+
+    <node pkg="ackermann_car_gazebo" type="cmd_vel_to_tricycle.py" name="cmd_vel_to_tricycle" output="screen"/>
+
+    <node pkg="ackermann_car_gazebo" type="dual_rtk_publisher.py" name="dual_rtk_publisher" output="screen"/>
+
+    <node pkg="ackermann_car_gazebo" type="sonar_range_marker.py" name="sonar_range_marker" output="screen"/>
+
+    <node if="$(arg start_ekf)" pkg="ackermann_car_gazebo" type="dual_rtk_imu_ekf_node" name="dual_rtk_imu_ekf" output="screen"/>
+  </group>
+
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="ackermann_car_rviz" output="screen"
+        args="-d $(arg rviz_config)"/>
+</launch>

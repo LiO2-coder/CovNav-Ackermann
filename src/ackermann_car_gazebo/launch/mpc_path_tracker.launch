@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="ackermann_car_gazebo"
+        type="mpc_controller_node"
+        name="mpc_controller"
+        output="screen" />
+</launch>

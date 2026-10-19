@@ -1,0 +1,10 @@
+# catkin 构建产物（不入库，见 PROJECT_HANDOFF.md 8.8）
+build/
+devel/
+logs/
+.catkin_tools/
+.catkin_workspace
+
+# Python
+__pycache__/
+*.pyc

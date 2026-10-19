@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot_namespace" default="ackermann_car"/>
+  <arg name="output" default="screen"/>
+
+  <group ns="$(arg robot_namespace)">
+    <node pkg="ackermann_car_gazebo" type="dual_rtk_imu_ekf_node" name="dual_rtk_imu_ekf" output="$(arg output)"/>
+  </group>
+</launch>

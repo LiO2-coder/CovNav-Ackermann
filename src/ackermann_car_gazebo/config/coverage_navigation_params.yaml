@@ -1,0 +1,405 @@
+# ==============================================================================
+# 阿克曼小车全覆盖导航总参数
+# ==============================================================================
+# 说明：
+# 1. 本文件是规划、GUI 导航、定位 EKF、路径跟踪、车辆控制转换和仿真传感器
+#    的统一参数入口。
+# 2. 正常使用时，只由 launch/coverage_navigation_gui.launch 加载本文件。
+#    其他 launch 文件不再单独加载 YAML，也不再重复写死这些节点私有参数。
+# 3. ROS 私有参数按“节点名”分组：
+#      coverage_navigation_gui/*            -> PyQt5/rospy 用户界面
+#      coverage_path_planner/*              -> C++ 覆盖路径规划服务
+#      mpc_controller/*                     -> C++ OSQP MPC 路径跟踪节点
+#      ackermann_car/xxx/*                  -> 仿真车辆命名空间内的节点
+# 4. 地图与车辆运动使用 ENU 笛卡尔坐标：x 为 East，y 为 North，z 为 Up。
+
+
+# ==============================================================================
+# 一、ROS / Gazebo 全局时间参数
+# ==============================================================================
+
+# 仿真环境使用 Gazebo /clock。真实车辆运行时通常改为 false。
+use_sim_time: true
+
+
+# ==============================================================================
+# 二、PyQt5 全覆盖导航 GUI 参数
+#    节点名：/coverage_navigation_gui
+# ==============================================================================
+coverage_navigation_gui:
+  # ------------------------------
+  # 地图与坐标显示
+  # ------------------------------
+
+  # GUI、规划路径、跟踪路径默认使用的坐标系名称。
+  frame_id: "map"
+
+  # 地形图资源路径。支持 package:// 包路径，GUI 会解析为实际文件路径。
+  render_path: "package://ackermann_car_gazebo/worlds/render.png"
+
+  # 地形图对应的真实世界边长，单位 m。
+  # 当前 terrain heightmap 按 129m x 129m 映射到 render.png。
+  map_world_size_m: 129.0
+
+  # ------------------------------
+  # GUI 订阅 / 发布 / 服务接口
+  # ------------------------------
+
+  # 主定位状态话题，优先使用双 RTK + IMU EKF 输出。
+  state_topic: "/ackermann_car/ekf_state"
+
+  # 第一备用里程计话题，EKF 短时间不可用时使用。
+  odom_topic: "/ackermann_car/odom"
+
+  # 第二备用里程计话题，兼容没有车辆命名空间的仿真。
+  fallback_odom_topic: "/odom"
+
+  # 覆盖路径规划服务。服务由 coverage_path_planner 节点提供。
+  planning_service: "/coverage_path_planner/plan_coverage_path"
+
+  # GUI 点击“导航”后发布的 nav_msgs/Path 话题。
+  plan_topic: "/plan_path"
+
+  # GUI 点击“停止”时发布零速度的话题，也应与跟踪节点输出一致。
+  cmd_vel_topic: "/ackermann_car/cmd_vel"
+
+  # 跟踪节点状态反馈话题，值为 idle / tracking / arrived / error:<reason>。
+  tracking_status_topic: "/tracking_status"
+
+  # ------------------------------
+  # GUI 按钮启动的 roslaunch 命令
+  # ------------------------------
+
+  # 点击“启动仿真”时执行：roslaunch <sim_launch> <sim_launch_args...>
+  sim_launch: "ackermann_car_gazebo gazebo_ackermann_car.launch"
+
+  # 仿真 launch 参数集中放在这里；需要改世界、初始位姿、是否开 RViz 时改这里。
+  sim_launch_args:
+    - "robot_name:=ackermann_car"
+    - "robot_namespace:=ackermann_car"
+    - "world_name:=package://ackermann_car_gazebo/worlds/terrain.world"
+    - "rviz_config:=package://ackermann_car_gazebo/rviz/ackermann_car.rviz"
+    - "x:=0.0"
+    - "y:=0.0"
+    - "z:=10.0"
+    - "yaw:=0.0"
+    - "gui:=true"
+    - "rviz:=true"
+    - "paused:=false"
+    - "use_sim_time:=true"
+    - "start_ekf:=true"
+    - "sonar_max_range_cm:=300.0"
+    - "sonar_fov_deg:=10.0"
+
+  # 点击“导航”时执行：roslaunch <tracker_launch> <tracker_launch_args...>
+  tracker_launch: "ackermann_car_gazebo mpc_path_tracker.launch"
+
+  # 跟踪节点参数已在 mpc_controller 分组中配置，这里通常留空。
+  tracker_launch_args: []
+
+
+# ==============================================================================
+# 三、覆盖路径规划参数
+#    节点名：/coverage_path_planner
+# ==============================================================================
+coverage_path_planner:
+  # 规划服务响应 nav_msgs/Path 使用的默认坐标系。
+  # 如果 service request.header.frame_id 非空，则优先使用请求中的 frame_id。
+  frame_id: "map"
+
+  # 默认扫描宽度，单位 m。GUI 请求中 scan_width > 0 时会覆盖该默认值。
+  scan_width: 1.0
+
+  # 默认覆盖系数，取值 0~1。数值越大，扫描线间距越密。
+  coverage_ratio: 0.8
+
+  # Dubins 掉头半径，单位 m。小车越不容易急转弯，该值应越大。
+  turn_radius: 2.0
+
+  # Dubins 曲线离散采样步长，单位 m。越小路径越平滑，但点数更多。
+  turn_step: 0.1
+
+  # 覆盖直线段离散采样步长，单位 m。
+  # 直线段可以比转弯段稀疏，建议 straight_step > turn_step。
+  straight_step: 0.80
+
+  # 起点接入代价权重。0 表示优化时不考虑机器人起点到入口的代价。
+  start_connection_weight: 1.0
+
+  # 精确 bitmask DP 优化子区域连接顺序的最大子区域数。
+  # 超过该数量时使用贪心连接策略，避免组合爆炸。
+  exact_connection_limit: 16
+
+  # 非相邻子区域连接惩罚，越大越倾向优先连接几何相邻的子区域。
+  nonadjacent_penalty: 10.0
+
+
+# ==============================================================================
+# 四、C++ OSQP MPC 路径跟踪参数
+#    节点名：/mpc_controller
+# ==============================================================================
+mpc_controller:
+  # ------------------------------
+  # 话题接口
+  # ------------------------------
+
+  # 主状态输入，优先使用 EKF 位姿。
+  state_topic: "/ackermann_car/ekf_state"
+
+  # 第一备用里程计输入。
+  odom_topic: "/ackermann_car/odom"
+
+  # 第二备用里程计输入。
+  fallback_odom_topic: "/odom"
+
+  # GUI 发布的规划路径。
+  plan_topic: "/plan_path"
+
+  # 输出给 cmd_vel_to_tricycle.py 的速度指令。
+  cmd_vel_topic: "/ackermann_car/cmd_vel"
+
+  # 输出给 GUI 的跟踪状态。
+  tracking_status_topic: "/tracking_status"
+
+  # ------------------------------
+  # 跟踪控制参数
+  # ------------------------------
+
+  # 控制循环频率，单位 Hz。
+  control_rate: 20.0
+
+  # 前后轴距，单位 m。必须与车辆 URDF / 转向转换节点保持一致。
+  wheelbase: 0.60
+
+  # 目标巡航速度，单位 m/s。
+  target_speed: 0.80
+
+  # MPC 允许的最小/最大线速度，单位 m/s。
+  min_linear_velocity: 0.0
+  max_linear_velocity: 1.20
+
+  # 到达终点判定距离阈值，单位 m。
+  goal_tolerance: 0.35
+
+  # 状态消息超时时间，单位 s。超过该时间未收到状态则发布 error:no_state。
+  state_timeout: 0.75
+
+  # 最大前轮转角，单位 rad。
+  max_steering_angle: 0.60
+
+  # 最大角速度，单位 rad/s，用于限制 Twist.angular.z。
+  max_angular_velocity: 1.4
+
+  # 终点减速距离，单位 m。
+  slowdown_distance: 1.5
+
+  # 横向偏离当前有序路径超过该距离时停车并发布 error:off_path，单位 m。
+  off_path_stop_distance: 1.80
+
+  # 前视距离 = clamp(|v| * lookahead_time, min_lookahead_dist, max_lookahead_dist)。
+  lookahead_time: 1.0
+  min_lookahead_dist: 0.50
+  max_lookahead_dist: 1.40
+
+  # MPC 预测模型离散步长，单位 s。
+  control_dt: 0.10
+
+  # MPC 预测域和控制域步数。
+  predict_time_domain: 10
+  control_time_domain: 4
+
+  # 状态误差权重，对应 [x, y, yaw]。
+  q_matrix_x: 12.0
+  q_matrix_y: 12.0
+  q_matrix_theta: 3.0
+
+  # 控制量权重，对应 [v, yaw_rate]。
+  r_matrix_v: 0.8
+  r_matrix_w: 0.8
+
+  # 单步控制增量约束，对应 [v, yaw_rate]。
+  delta_linear_velocity_min: -0.20
+  delta_linear_velocity_max: 0.12
+  delta_angular_velocity_min: -0.30
+  delta_angular_velocity_max: 0.30
+
+
+# ==============================================================================
+# 五、仿真车辆与底盘控制转换参数
+#    命名空间：/ackermann_car
+# ==============================================================================
+ackermann_car:
+  # ------------------------------
+  # robot_state_publisher
+  # ------------------------------
+  robot_state_publisher:
+    # TF 发布频率，单位 Hz。
+    publish_frequency: 50.0
+
+  # ------------------------------
+  # cmd_vel_to_tricycle.py
+  # ------------------------------
+  cmd_vel_to_tricycle:
+    # 前后轴距，单位 m。与 mpc_controller/wheelbase 保持一致。
+    wheelbase: 0.60
+
+    # 最大前轮转角，单位 rad。与车辆插件可接受范围保持一致。
+    max_steering_angle: 0.60
+
+    # 输入 Twist 速度话题；在 ackermann_car 命名空间内解析为 /ackermann_car/cmd_vel。
+    input_topic: "cmd_vel"
+
+    # 输出三轮车控制话题；URDF 插件监听 /ackermann_car/tricycle_cmd。
+    output_topic: "tricycle_cmd"
+
+  # ------------------------------
+  # dual_rtk_publisher.py
+  # Gazebo 位姿 -> 前后双 RTK NavSatFix 仿真数据
+  # ------------------------------
+  dual_rtk_publisher:
+    # Gazebo 中的模型名称，需与 sim_launch_args 的 robot_name 保持一致。
+    model_name: "ackermann_car"
+
+    # 生成 GPS 经纬度时使用的参考经纬高。
+    origin_latitude: 31.230416
+    origin_longitude: 121.473701
+    origin_altitude: 0.0
+
+    # 前 RTK 天线相对 base_link 的位置，单位 m。
+    front_offset_x: 0.30
+    front_offset_y: 0.0
+    front_offset_z: 0.30
+
+    # 后 RTK 天线相对 base_link 的位置，单位 m。
+    rear_offset_x: -0.30
+    rear_offset_y: 0.0
+    rear_offset_z: 0.30
+
+    # RTK 消息 frame_id。
+    front_frame_id: "rtk_front_link"
+    rear_frame_id: "rtk_rear_link"
+
+    # 发布的 RTK 话题；在 ackermann_car 命名空间内解析。
+    front_topic: "rtk_front/fix"
+    rear_topic: "rtk_rear/fix"
+
+  # ------------------------------
+  # sonar_range_marker.py
+  # 声呐 Range -> RViz 可视化 Marker
+  # ------------------------------
+  sonar_range_marker:
+    # 输入声呐 Range 话题；在 ackermann_car 命名空间内解析。
+    input_topic: "sonar/range"
+
+    # 输出 RViz Marker 话题。
+    marker_topic: "sonar/marker"
+
+    # Range 消息未提供有效视场角时使用的默认 FOV，单位 rad。
+    # 10 deg = 0.1745329252 rad。
+    fallback_fov: 0.1745329252
+
+    # 扇形弧线分段数，越大越圆滑。
+    segments: 24
+
+    # Marker 线宽，单位 m。
+    line_width: 0.03
+
+    # Marker 透明度，0~1。
+    alpha: 0.95
+
+  # ------------------------------
+  # dual_rtk_imu_ekf_node
+  # 双 RTK + IMU 定位融合
+  # ------------------------------
+  dual_rtk_imu_ekf:
+    # 传感器输入与 EKF 输出话题；在 ackermann_car 命名空间内解析。
+    front_rtk_topic: "rtk_front/fix"
+    rear_rtk_topic: "rtk_rear/fix"
+    imu_topic: "imu/data"
+    output_topic: "ekf_state"
+
+    # TF / frame 配置。
+    map_frame: "map"
+    base_frame: "base_link"
+    imu_frame: "imu_link"
+    front_rtk_frame: "rtk_front_link"
+    rear_rtk_frame: "rtk_rear_link"
+
+    # EKF 从 URDF 读取传感器安装几何时使用的 robot_description 参数。
+    robot_description_param: "/ackermann_car/robot_description"
+
+    # 经纬高 ENU 原点，应与 dual_rtk_publisher 的参考原点保持一致。
+    origin_latitude: 31.230416
+    origin_longitude: 121.473701
+    origin_altitude: 0.0
+
+    # 前后 RTK 近似同步队列大小与时间容差，单位 s。
+    sync_queue_size: 20
+    sync_slop: 0.05
+
+    # IMU 缓冲参数。EKF 会在 RTK 时间戳附近查找 IMU 数据。
+    imu_queue_size: 200
+    imu_buffer_duration: 5.0
+    imu_max_gap: 0.10
+
+    # EKF 单次预测最大步长，单位 s。越小积分越细，但计算更多。
+    max_prediction_step: 0.02
+
+    # RTK 位置测量标准差，单位 m。
+    rtk_position_std: 0.03
+
+    # 双 RTK 航向测量标准差，单位 rad。
+    dual_rtk_yaw_std: 0.03
+
+    # RTK 基线长度允许误差，单位 m。
+    baseline_length_tolerance: 0.10
+
+    # 前后 RTK 在水平面上的最小基线长度，单位 m，过小会拒绝航向更新。
+    min_baseline_xy_length: 0.20
+
+    # 是否使用高度参与 RTK 基线长度门限判断。
+    use_altitude_for_baseline_gate: true
+
+    # 高精度 / 中精度 RTK 标准差阈值，单位 m。
+    rtk_high_precision_std_threshold: 0.05
+    rtk_medium_precision_std_threshold: 0.20
+
+    # NavSatStatus 至少达到该值时认为 RTK 状态足够高精度。
+    rtk_high_precision_status_min: 2
+
+    # 高精度 RTK 时是否更强地直接约束位置。
+    rtk_direct_position_when_high_precision: true
+
+    # RTK 速度一阶滤波系数，0 表示不更新，1 表示完全使用最新观测。
+    rtk_velocity_filter_alpha: 0.35
+
+    # 低速静止判定阈值，单位 m/s。
+    stationary_speed_threshold: 0.03
+
+    # 静止判定使用的 RTK 时间窗口，单位 s。
+    stationary_rtk_window: 1.0
+
+    # 状态过程噪声对角线：[x, y, yaw, vx, vy, yaw_rate]。
+    process_noise_diagonal: [0.02, 0.02, 0.01, 0.20, 0.20, 0.001]
+
+    # IMU 数据间隔过大时放大过程噪声的倍数。
+    imu_gap_process_noise_scale: 25.0
+
+    # 是否使用 IMU 线加速度参与预测。
+    use_imu_linear_acceleration: false
+
+    # 使用 IMU 线加速度时，是否先做重力补偿。
+    use_gravity_compensated_acceleration: false
+
+    # 初始协方差对角线：[x, y, yaw, vx, vy, yaw_rate]。
+    initial_covariance_diagonal: [0.20, 0.20, 0.10, 1.00, 1.00, 0.01]
+
+    # 期望前/后 RTK 相对 IMU 的位置，单位 m，用于校验 URDF 几何。
+    expected_front_to_imu: [0.30, 0.0, 0.14]
+    expected_rear_to_imu: [-0.30, 0.0, 0.14]
+
+    # 期望前后 RTK 基线长度，单位 m。
+    expected_rtk_baseline: 0.60
+
+    # URDF 传感器几何校验容差，单位 m。
+    geometry_tolerance: 0.02

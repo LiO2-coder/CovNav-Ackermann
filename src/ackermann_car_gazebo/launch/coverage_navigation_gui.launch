@@ -1,0 +1,21 @@
+<launch>
+  <arg name="start_gui" default="true" />
+  <arg name="start_planner" default="true" />
+  <arg name="config" default="$(find ackermann_car_gazebo)/config/coverage_navigation_params.yaml" />
+
+  <rosparam command="load" file="$(arg config)" />
+
+  <include if="$(arg start_planner)"
+           file="$(find ackermann_car_gazebo)/launch/coverage_path_planner.launch" />
+
+  <node pkg="tf"
+        type="static_transform_publisher"
+        name="map_to_odom_static_tf"
+        args="0 0 0 0 0 0 map odom 100" />
+
+  <node if="$(arg start_gui)"
+        pkg="ackermann_car_gazebo"
+        type="coverage_navigation_gui.py"
+        name="coverage_navigation_gui"
+        output="screen" />
+</launch>
