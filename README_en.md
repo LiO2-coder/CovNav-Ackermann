@@ -17,7 +17,7 @@ The localization chain simulates a real agricultural-machine / sanitation-vehicl
 
 Planning and tracking each have their highlights: the planner combines polygon sub-region decomposition, OBB sweep-direction selection, Dubins-style turn connections, and bitmask-DP region ordering; the tracker uses ordered arc-length path projection to prevent "shortcut jumps" between coverage swaths.
 
-The project targets Ubuntu 20.04 + ROS Noetic + Gazebo simulation and is positioned as a learning and experimental effort; it has not yet been connected to a real vehicle (real-vehicle integration, Mbus chassis communication, and vision-based obstacle avoidance are all on the development plan).
+The project targets Ubuntu 20.04 + ROS Noetic + Gazebo simulation and is positioned as a learning and experimental effort; the real vehicle has already been tested, and the related on-vehicle code (bag recording & replay, Mbus chassis communication, vision & ultrasonic obstacle avoidance, etc.) will be uploaded once cleaned up.
 
 <div align="center">
   <img src="docs/pipeline.png" alt="System overview pipeline" width="1100">
@@ -87,7 +87,7 @@ CovNav-Ackermann/
 ### Get the Code
 
 ```bash
-git clone <repository-url>   # replace <repository-url> with this repository's actual URL
+git clone https://github.com/LiO2-coder/CovNav-Ackermann.git
 cd CovNav-Ackermann
 ```
 

@@ -17,7 +17,7 @@ ROS1 Noetic + Gazebo 环境下的 Ackermann（阿克曼转向）小车全覆盖�
 
 规划与跟踪各有看点：规划器融合了多边形子区域分解、OBB 扫描方向选择、Dubins 风格转弯连接与 bitmask DP 区域排序等技巧；跟踪器采用有序弧长路径投影，避免覆盖航带之间"抄近道跳线"。
 
-项目面向 Ubuntu 20.04 + ROS Noetic + Gazebo 仿真环境，定位为学习与实验性质，尚未接入实车（实机接入、Mbus 底盘通信、视觉避障均在开发计划中）。
+项目面向 Ubuntu 20.04 + ROS Noetic + Gazebo 仿真环境，定位为学习与实验性质；实车已完成测试，实机相关代码（bag 录制与回放、Mbus 底盘通信、视觉与超声波避障等）整理好后将陆续上传。
 
 <div align="center">
   <img src="docs/pipeline.png" alt="系统总体流程" width="1100">
@@ -87,7 +87,7 @@ CovNav-Ackermann/
 ### 获取代码
 
 ```bash
-git clone <repository-url>   # 替换 <repository-url> 为本仓库实际地址
+git clone https://github.com/LiO2-coder/CovNav-Ackermann.git
 cd CovNav-Ackermann
 ```
 
