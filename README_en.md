@@ -49,10 +49,12 @@ CovNav-Ackermann/
 ├── .gitignore                     # Git ignore rules (excludes catkin build artifacts)
 ├── README.md                      # Chinese README
 ├── README_en.md                   # English README
-├── docs/                          # The two pipeline illustrations (pipeline.png, coverage_planner_pipeline.png)
+├── docs/                          # Docs & illustrations
+│   ├── PROJECT_HANDOFF.md         # Usage & troubleshooting guide (theory, interfaces, common commands, troubleshooting)
+│   ├── pipeline.png               # Main pipeline illustration
+│   └── coverage_planner_pipeline.png   # Coverage path generation pipeline
 ├── install.sh                     # One-click install: apt/ROS deps + rosdep + catkin build
 ├── run.sh                         # One-click launch: clean leftover Gazebo processes, start main entry in a new terminal
-├── PROJECT_HANDOFF.md             # Project handoff doc (theory, interfaces, troubleshooting, dev guide)
 └── src/
     └── ackermann_car_gazebo/      # The single ROS package
         ├── launch/                # 6 launch files: GUI main entry / simulation / planner / EKF / MPC / RViz
@@ -381,7 +383,7 @@ All node parameters are configured in one place, `src/ackermann_car_gazebo/confi
 
 - **Coordinate convention**: the map and planning consistently use ENU Cartesian coordinates (x=East, y=North, z=Up).
 - **Sonar is visualization-only**: sonar data is currently only converted by `sonar_range_marker.py` into an RViz Marker for display; it is not involved in control or obstacle avoidance (obstacle avoidance is roadmap item 4).
-- **Troubleshooting**: for common problems (`roslaunch` cannot find the package, the GUI map does not display, `error:no_state` / `error:off_path` / `error:optimization`, `install.sh` failures, etc.) see Chapter 9 of [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md).
+- **Troubleshooting**: for common problems (`roslaunch` cannot find the package, the GUI map does not display, `error:no_state` / `error:off_path` / `error:optimization`, `install.sh` failures, etc.) see Chapter 9 of [PROJECT_HANDOFF.md](docs/PROJECT_HANDOFF.md).
 
 ## Roadmap
 
@@ -405,6 +407,6 @@ This project is released under the [MIT License](https://opensource.org/licenses
 
 ## Support
 
-- For usage questions and troubleshooting, please first consult [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) (especially Chapter 9, "Common Problems and Troubleshooting") and the Notes section of this README;
+- For usage questions and troubleshooting, please first consult [PROJECT_HANDOFF.md](docs/PROJECT_HANDOFF.md) (especially Chapter 9, "Common Problems and Troubleshooting") and the Notes section of this README;
 - If your problem remains unsolved, feel free to open an Issue; attaching an `rqt_graph` screenshot and the `/tracking_status` output makes the problem much easier to locate;
 - If this project helps you, please consider giving it a ⭐ Star!

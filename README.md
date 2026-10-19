@@ -49,10 +49,12 @@ CovNav-Ackermann/
 ├── .gitignore                     # Git 忽略规则（排除 build/、devel/ 等构建产物）
 ├── install.sh                     # 一键安装：apt/ROS 依赖 + rosdep + catkin build
 ├── run.sh                         # 一键启动：清理残留 Gazebo 进程后新终端启动主入口
-├── docs/                          # 两张流程插图（pipeline.png、coverage_planner_pipeline.png）
+├── docs/                          # 文档与流程插图
+│   ├── PROJECT_HANDOFF.md         # 使用与故障排查文档（原理、接口、常用命令、排障）
+│   ├── pipeline.png               # 流程主图
+│   └── coverage_planner_pipeline.png   # 覆盖路径生成流程图
 ├── README.md                      # 中文说明文档
 ├── README_en.md                   # 英文版说明文档
-├── PROJECT_HANDOFF.md             # 项目交接文档（原理、接口、排障、开发指南）
 └── src/
     └── ackermann_car_gazebo/      # 唯一 ROS 包
         ├── launch/                # 6 个 launch：GUI 主入口 / 仿真 / 规划 / EKF / MPC / RViz
@@ -381,7 +383,7 @@ catkin_test_results
 
 - **坐标约定**：地图与规划统一使用 ENU 笛卡尔坐标（x=East，y=North，z=Up）。
 - **声呐仅可视化**：声呐数据当前只经 `sonar_range_marker.py` 转 RViz Marker 显示，不参与控制或避障（避障在路线图第 4 项）。
-- **排障**：常见问题（`roslaunch` 找不到包、GUI 地图不显示、`error:no_state` / `error:off_path` / `error:optimization`、`install.sh` 失败等）见 [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) 第 9 章。
+- **排障**：常见问题（`roslaunch` 找不到包、GUI 地图不显示、`error:no_state` / `error:off_path` / `error:optimization`、`install.sh` 失败等）见 [PROJECT_HANDOFF.md](docs/PROJECT_HANDOFF.md) 第 9 章。
 
 ## 路线图（Roadmap）
 
@@ -405,6 +407,6 @@ catkin_test_results
 
 ## 支持
 
-- 使用问题与排障请先查阅 [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md)（尤其第 9 章"常见问题和排障"）与本文"说明"一节；
+- 使用问题与排障请先查阅 [PROJECT_HANDOFF.md](docs/PROJECT_HANDOFF.md)（尤其第 9 章"常见问题和排障"）与本文"说明"一节；
 - 未解决欢迎开 Issue，附上 `rqt_graph` 截图与 `/tracking_status` 输出会更易定位；
 - 如果这个项目对你有帮助，欢迎点一个 ⭐ Star 支持一下！
