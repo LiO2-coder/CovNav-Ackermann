@@ -401,7 +401,7 @@ catkin_test_results
 
 ## 许可证
 
-本项目采用 [MIT License](https://opensource.org/licenses/MIT)（见 `src/ackermann_car_gazebo/package.xml` 中的 `<license>` 声明）。仓库根目录尚未包含 LICENSE 全文文件，正式发布前建议补充。
+本项目采用 [MIT License](https://opensource.org/licenses/MIT)，全文见仓库根目录的 [LICENSE](LICENSE) 文件（与 `src/ackermann_car_gazebo/package.xml` 中的 `<license>` 声明一致）。
 
 ## 支持
 

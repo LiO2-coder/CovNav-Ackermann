@@ -401,7 +401,7 @@ Improvements via Issues and Pull Requests are welcome: bug reports, documentatio
 
 ## License
 
-This project uses the [MIT License](https://opensource.org/licenses/MIT) (see the `<license>` declaration in `src/ackermann_car_gazebo/package.xml`). The repository root does not yet include a full LICENSE file; it is recommended to add one before the official release.
+This project is released under the [MIT License](https://opensource.org/licenses/MIT); see the [LICENSE](LICENSE) file at the repository root (consistent with the `<license>` declaration in `src/ackermann_car_gazebo/package.xml`).
 
 ## Support
 
